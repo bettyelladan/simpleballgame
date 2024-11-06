@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Ball Catching Game</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Basic styles for the body and container */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #cd96ba;
+            background-size: 300% 300%;
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            animation: gradientShift 10s ease infinite ;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        #gameArea {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #87CEEB, #FFB6C1);
+            overflow: hidden;
+            transition: background-color 1s ease;
+        }
+        #basket {
+            width: 10vw;
+            height: 8vh;
+            background-color: #fff52e;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #star {
+            width: 5vw;
+            height: 5vw;
+            background-color: rgb(140, 236, 22);
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            animation: bounce 3s linear infinite;
+        }
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        #scoreBoard {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 2rem;
+            color: white;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            color: white;
+            display: none;
+            animation: fadeIn 1s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #32CD32;
+            color: white;
+
+        /* Style for the popup overlay */
+        #gameTagInputArea {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 100px;
+            background-color: #FFB6C1;
+            z-index: 10;
+           }
+
+        #gameTagInputArea h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #FFD700;
+        }
+
+        /* Input and button styling */
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #28a745;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        /* Faded background effect for the game area */
+        #gameArea {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #87CEFA;
+            z-index: 1;
+            padding: 20px;
+            overflow: hidden;
+        }
+        #gameTagDisplay {
+            position: absolute;
+            top:20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+
+        } 
+        #scoreDisplay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #FFD700;
+}
+
+        }
+    </style>
+</head>
+<body>
+
+    <!--  User Game tag input form-->
+    <div id="gameTagInputArea">
+     <h1> Enter Your Game Tag</h1>
+     <input type="text" id="gameTag" placeholder="Enter Your Game Tag">
+     <button id="proceedButton">Proceed to Game</button>
+    <p id="error-message">Please enter a game tag to start the game!</p>
+    </div>
+    <div id="gameArea">
+        <h2 id="gameTagDisplay"></h2>
+        <div id="basket"></div>
+        <div id="star"></div>
+        <div id="scoreBoard">Score: 0 | Tries Left: 15</div>
+        <div id="message"></div>
+        <div id="controls">
+            <button id="startBtn" class="control-btn">Start</button>
+            <button id="pauseBtn" class="control-btn">Pause</button>
+        </div>
+    </div>
+
+    <script>
+        const basket = document.getElementById('basket');
+        const star = document.getElementById('star');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const message = document.getElementById('message');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const gameArea = document.getElementById('gameArea');
+        const gameTagInputArea = document.getElementById('gameTagInputArea');
+        const TagInput = document.getElementById('gameTag');
+        const TagDisplay = document.getElementById('gameTagDisplay');
+        const proceedButton = document.getElementById('proceedButton');
+        
+        document.getElementById('proceedButton').addEventListener('click', function() {
+            const gameTag = document.getElementById('gameTag').value.trim();
+            const errorMessage = document.getElementById('error-message');
+            
+            // Check if game tag is empty
+            if (gameTag === '') {
+                errorMessage.style.display = 'block'; // Show error message
+            } else {
+                errorMessage.style.display = 'none'; // Hide error message
+                document.getElementById('gameTagDisplay').textContent = `Welcome, ${gameTag}!`;
+                document.getElementById('gameTagInputArea').style.display = 'none'; // Hide input area
+                document.getElementById('gameArea').style.display = 'block'; // Show game area
+                // Proceed with starting the game here
+            }
+        });
+
+
+
+        let score = 0;
+        let triesLeft = 15;
+        let basketPosition = 50; // Start in the middle
+        let isGameOver = false;
+        let gameActive = false;
+        let dropInterval;
+        let starSpeed = 1.5;
+
+        // Array of background colors
+        const backgroundColors = ['#FFB6C1', '#FFD700', '#32CD32', '#FF6347', '#4682B4'];
+
+        // Reset star's position and give random size
+        function resetStar() {
+            const randomX = Math.random() * (100 - 5);
+            const randomSize = Math.random() * (8 - 3) + 3; // Random size between 3vw and 8vw
+            star.style.left = randomX + 'vw';
+            star.style.top = '0vh';
+            star.style.width = randomSize + 'vw';
+            star.style.height = randomSize + 'vw';
+        }
+
+        // Drop the star downwards
+        function dropStar() {
+            let starY = parseFloat(star.style.top);
+
+            dropInterval = setInterval(() => {
+                if (!gameActive || isGameOver) return;
+
+                starY += 0.8 ; // Adjust fall speed based on score
+                star.style.top = starY + 'vh';
+
+                // Check if the star reaches the bottom
+                if (starY >= 92) {
+                    clearInterval(dropInterval);
+                    triesLeft--;
+
+                    if (checkCatch()) {
+                        score++;
+                        starSpeed += 0.1; // Increase speed with each successful catch
+                        displayMessage('Nice Catch!', 'catch');
+                    } else {
+                        displayMessage('Oh no! Missed!', 'miss');
+                    }
+
+                    scoreBoard.textContent = `Score: ${score} | Tries Left: ${triesLeft}`;
+                    gameArea.style.backgroundColor = backgroundColors[Math.floor(Math.random() * backgroundColors.length)];
+
+                    if (triesLeft <= 0) {
+                        displayMessage(score >= 10 ? 'You Win!' : 'Game Over!', 'end');
+                        isGameOver = true;
+                        gameActive = false;
+                    } else {
+                        resetStar();
+                        dropStar();
+                    }
+                }
+            }, 20);
+        }
+
+        // Check if the basket caught the star
+        function checkCatch() {
+            const starRect = star.getBoundingClientRect();
+            const basketRect = basket.getBoundingClientRect();
+
+            return !(starRect.right < basketRect.left || 
+                     starRect.left > basketRect.right || 
+                     starRect.bottom < basketRect.top);
+        }
+
+        // Display messages for catches, misses, and game over with different effects
+        function displayMessage(text, type) {
+            message.textContent = text;
+            message.style.display = 'block';
+            message.style.color = type === 'catch' ? '#32CD32' : (type === 'miss' ? '#FF6347' : 'white');
+
+            if (type === 'catch') {
+                star.style.transition = 'transform 0.3s ease';
+                star.style.transform = 'scale(1.5)'; // Grow the star on catch
+            } else if (type === 'miss') {
+                basket.style.animation = 'wobble 0.5s ease';
+            }
+
+            setTimeout(() => {
+                message.style.display = 'none';
+                if (type === 'catch') star.style.transform = 'scale(1)';
+                basket.style.animation = ''; // Reset basket animation
+            }, 1500);
+        }
+
+        // Handle basket movement with arrow keys
+        document.addEventListener('keydown', (event) => {
+            if (!gameActive || isGameOver) return;
+
+            if (event.key === 'ArrowLeft' && basketPosition > 0) {
+                basketPosition -= 5;
+            } else if (event.key === 'ArrowRight' && basketPosition < 90) {
+                basketPosition += 5;
+            }
+
+            basket.style.left = basketPosition + 'vw';
+        });
+
+        // Start and Pause button functionality
+        startBtn.addEventListener('click', () => {
+            if (!isGameOver) {
+                gameActive = true;
+                if (!dropInterval) {
+                    resetStar();
+                    dropStar();
+                }
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            gameActive = false;
+        });
+
+        // Start the game for the first time
+        resetStar();
+     src="sindex.js" 
+
+     // Event listener for the Proceed button
+     document.getElementById('proceedButton').addEventListener('click', function() {
+            const gameTag = document.getElementById('gameTag').value.trim();
+            const errorMessage = document.getElementById('error-message');
+            
+            // Check if game tag is empty
+            if (gameTag === '') {
+                errorMessage.style.display = 'block'; // Show error message
+            } else {
+                errorMessage.style.display = 'none'; // Hide error message
+                document.getElementById('gameTagDisplay').textContent = `Welcome, ${gameTag}!`;
+                document.getElementById('gameTagInputArea').style.display = 'none'; // Hide input area
+                document.getElementById('gameArea').style.display = 'block'; // Show game area
+                startGame(); // Call the game start function
+            }
+        });
+
+        function startGame() {
+            console.log('Game has started!');
+        }
+    </script>
+</body>
+</html>
